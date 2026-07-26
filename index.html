@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🎁 Một điều bất ngờ dành cho bạn</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,600;0,700;1,500&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+
+  /* ============================================================
+     TÙY CHỈNH Ở ĐÂY — không cần biết code, chỉ cần sửa chữ trong
+     dấu ngoặc kép "..." bên dưới nếu muốn đổi tên hoặc lời nhắn.
+     ============================================================ */
+
+  :root{
+    --bg-bait-1:#ffd9e8;
+    --bg-bait-2:#ffe8b8;
+    --accent-bait:#ff5c8a;
+    --ink:#2b2320;
+    --ink-soft:#5c4f45;
+    --paper:#f7f1e4;
+    --paper-line:#ddd0b2;
+    --alert-bg:#0b0705;
+    --alert-red:#ff3b3f;
+    --safe-green:#1f6d47;
+    --font-display:'Fraunces', serif;
+    --font-body:'Inter', sans-serif;
+    --font-mono:'JetBrains Mono', monospace;
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;height:100%;font-family:var(--font-body);overflow-x:hidden;}
+
+  .stage{
+    position:fixed; inset:0;
+    display:none;
+    align-items:center; justify-content:center;
+    flex-direction:column;
+    text-align:center;
+    padding:24px;
+  }
+  .stage.active{display:flex;}
+
+  /* ---------- GIAI ĐOẠN 1: MỒI NHỬ ---------- */
+  #stage-bait{
+    background:linear-gradient(135deg, var(--bg-bait-1), var(--bg-bait-2));
+  }
+  .eyebrow{
+    font-family:var(--font-mono);
+    font-size:13px;
+    letter-spacing:.08em;
+    color:var(--accent-bait);
+    margin-bottom:14px;
+    text-transform:uppercase;
+  }
+  .bait-headline{
+    font-family:var(--font-display);
+    font-weight:600;
+    font-style:italic;
+    font-size:clamp(28px,6vw,48px);
+    color:#3a1f2c;
+    max-width:600px;
+    line-height:1.15;
+    margin:0 0 12px;
+  }
+  .bait-sub{
+    font-size:16px; color:#6b4a56; margin-bottom:34px;
+  }
+  .ribbon-btn{
+    position:relative;
+    font-family:var(--font-body);
+    font-weight:600;
+    font-size:18px;
+    color:#fff;
+    background:var(--accent-bait);
+    border:none;
+    padding:16px 40px;
+    border-radius:100px;
+    cursor:pointer;
+    box-shadow:0 8px 24px rgba(255,92,138,.4);
+    transition:transform .15s ease, box-shadow .15s ease;
+  }
+  .ribbon-btn:hover{transform:translateY(-2px); box-shadow:0 12px 28px rgba(255,92,138,.5);}
+  .ribbon-btn:active{transform:translateY(0);}
+
+  /* ---------- GIAI ĐOẠN 2: BÁO ĐỘNG GIẢ ---------- */
+  #stage-alert{
+    background:var(--alert-bg);
+    position:fixed; inset:0;
+    overflow:hidden;
+  }
+  #matrixCanvas{
+    position:absolute; inset:0;
+    width:100%; height:100%;
+    opacity:.55;
+  }
+  #stage-alert.shake-1 .alert-content{ animation:shake1 .25s infinite; }
+  #stage-alert.shake-2 .alert-content{ animation:shake2 .15s infinite; }
+  #stage-alert.shake-3 .alert-content{ animation:shake3 .08s infinite; }
+  @keyframes shake1{
+    0%{transform:translate(0,0);} 50%{transform:translate(-2px,2px);} 100%{transform:translate(0,0);}
+  }
+  @keyframes shake2{
+    0%{transform:translate(0,0);} 25%{transform:translate(-4px,3px);}
+    50%{transform:translate(4px,-3px);} 75%{transform:translate(-3px,-4px);} 100%{transform:translate(0,0);}
+  }
+  @keyframes shake3{
+    0%{transform:translate(0,0) rotate(0deg);} 25%{transform:translate(-8px,5px) rotate(-.4deg);}
+    50%{transform:translate(8px,-6px) rotate(.4deg);} 75%{transform:translate(-6px,-7px) rotate(-.3deg);}
+    100%{transform:translate(0,0) rotate(0deg);}
+  }
+  .static-overlay{
+    position:absolute; inset:0; z-index:3;
+    pointer-events:none;
+    opacity:0;
+    background:repeating-linear-gradient(0deg, rgba(255,255,255,.06) 0px, transparent 1px, transparent 2px);
+    mix-blend-mode:overlay;
+  }
+  .static-overlay.on{ opacity:.5; animation:staticflick .06s steps(1) infinite; }
+  @keyframes staticflick{ 50%{ opacity:.15; } }
+  .vignette-pulse{
+    position:absolute; inset:0; z-index:1;
+    box-shadow:inset 0 0 0px rgba(255,0,0,0);
+    pointer-events:none;
+    transition:box-shadow .3s ease;
+  }
+  .vignette-pulse.pulse{ box-shadow:inset 0 0 140px rgba(255,20,20,.55); animation:vigpulse .5s ease-in-out infinite; }
+  @keyframes vigpulse{ 50%{ box-shadow:inset 0 0 60px rgba(255,20,20,.3); } }
+  .error-line{ color:#ff5c5f !important; }
+  .alert-content{
+    position:relative; z-index:2;
+    display:flex; flex-direction:column; align-items:center;
+    background:rgba(11,7,5,.55);
+    padding:28px 32px;
+    border-radius:8px;
+    backdrop-filter:blur(1px);
+  }
+  .alert-icon{ font-size:56px; margin-bottom:14px; animation:blink .5s steps(1) infinite; }
+  @keyframes blink{ 50%{ opacity:.15; } }
+  .alert-title{
+    font-family:var(--font-mono);
+    font-weight:700;
+    font-size:clamp(20px,4.5vw,32px);
+    letter-spacing:.02em;
+    margin:0 0 16px;
+    color:var(--alert-red);
+    text-shadow:
+      2px 0 0 rgba(0,255,200,.5),
+      -2px 0 0 rgba(255,0,60,.5),
+      0 0 18px rgba(255,59,63,.6);
+    animation:glitchpos .18s steps(2) infinite;
+  }
+  @keyframes glitchpos{
+    0%{ transform:translate(0,0); }
+    50%{ transform:translate(1px,-1px); }
+    100%{ transform:translate(-1px,1px); }
+  }
+  .terminal{
+    font-family:var(--font-mono);
+    font-size:13.5px;
+    color:#8fffb0;
+    text-align:left;
+    min-width:280px;
+    max-width:90vw;
+    min-height:150px;
+    line-height:1.7;
+  }
+  .terminal .done{ color:#6bff9c; }
+  .terminal .cursor{ display:inline-block; width:8px; background:#8fffb0; animation:blink .6s steps(1) infinite; }
+  .progress-wrap{
+    width:100%; max-width:320px;
+    height:8px;
+    background:rgba(255,255,255,.08);
+    border:1px solid rgba(255,59,63,.4);
+    border-radius:100px;
+    margin-top:16px;
+    overflow:hidden;
+  }
+  .progress-bar{
+    height:100%; width:0%;
+    background:linear-gradient(90deg, var(--alert-red), #ff9d9f);
+    transition:width .25s linear;
+  }
+
+  /* ---------- GIAI ĐOẠN 3: TIẾT LỘ ---------- */
+  #stage-reveal{
+    background:var(--paper);
+    background-image:
+      linear-gradient(var(--paper-line) 1px, transparent 1px);
+    background-size:100% 38px;
+  }
+  .card{
+    max-width:560px;
+    background:#fffdf8;
+    border:1px solid var(--paper-line);
+    border-radius:6px;
+    padding:40px 36px;
+    box-shadow:0 20px 50px rgba(60,45,20,.12);
+  }
+  .seal{
+    width:64px; height:64px;
+    margin:0 auto 18px;
+    border-radius:50%;
+    background:var(--safe-green);
+    color:#fff;
+    display:flex; align-items:center; justify-content:center;
+    font-size:26px;
+    box-shadow:0 6px 16px rgba(31,109,71,.35);
+  }
+  .reveal-headline{
+    font-family:var(--font-display);
+    font-weight:700;
+    font-size:clamp(24px,4.5vw,32px);
+    color:var(--ink);
+    margin:0 0 8px;
+  }
+  .reveal-sub{
+    color:var(--ink-soft);
+    font-size:15px;
+    margin-bottom:26px;
+    line-height:1.6;
+  }
+  .tips{
+    text-align:left;
+    list-style:none;
+    padding:0; margin:0 0 28px;
+    border-top:1px dashed var(--paper-line);
+    border-bottom:1px dashed var(--paper-line);
+    padding:18px 0;
+  }
+  .tips li{
+    display:flex; gap:10px;
+    font-size:14.5px;
+    color:var(--ink);
+    line-height:1.5;
+    margin-bottom:12px;
+  }
+  .tips li:last-child{margin-bottom:0;}
+  .tips b{ color:var(--safe-green); font-family:var(--font-mono); flex-shrink:0; }
+  .signature{
+    font-family:var(--font-display);
+    font-style:italic;
+    color:var(--ink-soft);
+    font-size:15px;
+    margin-bottom:22px;
+  }
+  .close-btn{
+    font-family:var(--font-body);
+    font-weight:600;
+    font-size:15px;
+    color:var(--ink);
+    background:transparent;
+    border:1.5px solid var(--ink);
+    padding:12px 28px;
+    border-radius:100px;
+    cursor:pointer;
+    transition:background .15s ease, color .15s ease;
+  }
+  .close-btn:hover{ background:var(--ink); color:#fffdf8; }
+
+  .thanks{
+    display:none;
+    font-family:var(--font-display);
+    font-style:italic;
+    color:var(--safe-green);
+    font-size:16px;
+    margin-top:16px;
+  }
+  .thanks.show{display:block;}
+
+  #transitionOverlay{
+    position:fixed; inset:0; z-index:9999;
+    display:none;
+    background:#000;
+    overflow:hidden;
+  }
+  #glitchPatches{
+    position:fixed; inset:0; z-index:9998;
+    pointer-events:none;
+    display:none;
+  }
+  #glitchPatches.on{ display:block; }
+  .glitch-patch{
+    position:absolute;
+    opacity:.85;
+    mix-blend-mode:screen;
+    filter:contrast(1.3);
+  }
+
+  #transitionOverlay.spread-in{ animation:spreadIn .3s ease-out forwards; }
+  @keyframes spreadIn{
+    0%{ clip-path:circle(4% at 50% 55%); }
+    100%{ clip-path:circle(150% at 50% 55%); }
+  }
+  #transitionOverlay.on{ display:block; }
+  #transitionOverlay.punch{ animation:punchZoom .35s ease-out; }
+  @keyframes punchZoom{
+    0%{ transform:scale(1); }
+    30%{ transform:scale(1.09); }
+    100%{ transform:scale(1); }
+  }
+  #transitionCanvas{
+    width:100%; height:100%;
+    image-rendering:pixelated;
+    filter:contrast(1.15) saturate(1.3);
+  }
+  .scanlines{
+    position:absolute; inset:0;
+    pointer-events:none;
+    background:repeating-linear-gradient(0deg, rgba(0,0,0,.35) 0px, rgba(0,0,0,.35) 1px, transparent 1px, transparent 3px);
+    mix-blend-mode:multiply;
+  }
+  .tracking-bar{
+    position:absolute; left:0; right:0;
+    height:14px;
+    background:rgba(255,255,255,.12);
+    mix-blend-mode:overlay;
+    pointer-events:none;
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    #stage-alert.shake-1, #stage-alert.shake-2, #stage-alert.shake-3, .alert-icon, #transitionOverlay.punch{ animation:none; }
+  }
+</style>
+</head>
+<body>
+
+  <div id="glitchPatches"></div>
+  <div id="transitionOverlay"><canvas id="transitionCanvas" width="160" height="90"></canvas><div class="scanlines"></div></div>
+
+  <!-- GIAI ĐOẠN 1 -->
+  <section id="stage-bait" class="stage active">
+    <div class="eyebrow">Từ một người bạn gửi cho bạn 💌</div>
+    <h1 class="bait-headline">Có một điều bất ngờ nho nhỏ đang chờ bạn mở ra...</h1>
+    <p class="bait-sub">Bấm vào đây để xem nhé 👇</p>
+    <button class="ribbon-btn" onclick="openGift()">Mở quà 🎁</button>
+  </section>
+
+  <!-- GIAI ĐOẠN 2 -->
+  <section id="stage-alert" class="stage">
+    <canvas id="matrixCanvas"></canvas>
+    <div class="vignette-pulse" id="vignette"></div>
+    <div class="static-overlay" id="staticOverlay"></div>
+    <div class="alert-content">
+      <div class="alert-icon">⚠️</div>
+      <h1 class="alert-title" id="alertText">ĐÃ PHÁT HIỆN MỐI ĐE DỌA</h1>
+      <div class="terminal" id="terminalBox"></div>
+      <div class="progress-wrap"><div class="progress-bar" id="progressBar"></div></div>
+    </div>
+  </section>
+
+  <!-- GIAI ĐOẠN 3 -->
+  <section id="stage-reveal" class="stage">
+    <div class="card">
+      <div class="seal">OK</div>
+      <h2 class="reveal-headline">Không có gì:)</h2>
+      <p class="reveal-sub">
+        
+      </p>
+      <ul class="tips">
+        <li><b>1.</b>:):):):):):):):):) </li>
+        <li><b>2.</b>:):):):):):):):):) </li>
+        <li><b>3.</b>:):):):):):):):):) </li>
+      </ul>
+      <button class="close-btn" onclick="showThanks()">Đã hiểu</button>
+      <p class="thanks" id="thanksMsg"></p>
+    </div>
+  </section>
+
+<script>
+  function switchStage(id){
+    document.querySelectorAll('.stage').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+  }
+
+  // Tiếng còi báo động leo thang theo 3 pha, gắt dần về cuối
+  function playAlarm(){
+    try{
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const now = ctx.currentTime;
+      const duration = 9.6;
+      const master = ctx.createGain();
+      master.connect(ctx.destination);
+      master.gain.setValueAtTime(0.045, now);
+      master.gain.linearRampToValueAtTime(0.075, now + duration*0.6);
+      master.gain.setValueAtTime(0.075, now + duration - 0.4);
+      master.gain.linearRampToValueAtTime(0.0001, now + duration);
+
+      // lớp còi chính, hụ lên hụ xuống, chu kỳ co ngắn dần (nhịp nhanh dần theo thời gian)
+      const osc = ctx.createOscillator();
+      osc.type = 'sawtooth';
+      osc.connect(master);
+      let t = now, toggle = 0;
+      while(t < now + duration){
+        const progress = (t - now) / duration;
+        const period = 0.55 - progress*0.25; // 0.55s lúc đầu -> 0.3s lúc cao trào
+        const low = 480, high = 780;
+        osc.frequency.setValueAtTime(toggle % 2 === 0 ? low : high, t);
+        osc.frequency.linearRampToValueAtTime(toggle % 2 === 0 ? high : low, t + period);
+        t += period;
+        toggle++;
+      }
+      osc.start(now); osc.stop(now + duration);
+
+      // lớp phụ nhiễu/gắt hơn, chỉ vào từ nửa sau cho cảm giác leo thang
+      const osc2 = ctx.createOscillator();
+      const gain2 = ctx.createGain();
+      osc2.type = 'square';
+      gain2.gain.setValueAtTime(0, now);
+      gain2.gain.setValueAtTime(0, now + duration*0.5);
+      gain2.gain.linearRampToValueAtTime(0.03, now + duration*0.75);
+      gain2.gain.linearRampToValueAtTime(0.0001, now + duration);
+      osc2.frequency.setValueAtTime(140, now);
+      osc2.frequency.linearRampToValueAtTime(90, now + duration);
+      osc2.connect(gain2).connect(master);
+      osc2.start(now); osc2.stop(now + duration);
+    }catch(e){ /* nếu trình duyệt chặn âm thanh, bỏ qua và vẫn tiếp tục hiệu ứng hình ảnh */ }
+  }
+
+  // ---- Hiệu ứng mưa ký tự kiểu "Matrix" chạy nền ----
+  let matrixInterval = null;
+  function startMatrixRain(){
+    const canvas = document.getElementById('matrixCanvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    const chars = '01001100101010100101010101011110000101010010100001';
+    const fontSize = 16;
+    const columns = Math.floor(canvas.width / fontSize);
+    const drops = new Array(columns).fill(1);
+
+    matrixInterval = setInterval(() => {
+      ctx.fillStyle = 'rgba(11,7,5,0.15)';
+      ctx.fillRect(0,0,canvas.width,canvas.height);
+      ctx.fillStyle = '#3dff8a';
+      ctx.font = fontSize + 'px monospace';
+      for(let x=0; x<drops.length; x++){
+        const char = chars[Math.floor(Math.random()*chars.length)];
+        ctx.fillText(char, x*fontSize, drops[x]*fontSize);
+        if(drops[x]*fontSize > canvas.height && Math.random() > 0.975){ drops[x] = 0; }
+        drops[x]++;
+      }
+    }, 45);
+  }
+  function stopMatrixRain(){
+    if(matrixInterval){ clearInterval(matrixInterval); matrixInterval = null; }
+  }
+
+  // ---- Hiệu ứng gõ chữ terminal tự động (log chung chung, không đề cập ảnh/camera/danh bạ thật) ----
+  function typeTerminal(lines, box, onDone){
+    let li = 0;
+    box.innerHTML = '';
+    function typeLine(){
+      if(li >= lines.length){ if(onDone) onDone(); return; }
+      const lineEl = document.createElement('div');
+      const isError = lines[li].startsWith('[LỖI]');
+      if(isError) lineEl.classList.add('error-line');
+      box.appendChild(lineEl);
+      let ci = 0;
+      const text = lines[li];
+      const speed = 14;
+      const timer = setInterval(() => {
+        lineEl.innerHTML = text.slice(0, ci) + '<span class="cursor">&nbsp;</span>';
+        ci++;
+        if(ci > text.length){
+          clearInterval(timer);
+          lineEl.innerHTML = (isError ? '<span class="error-line">›</span> ' : '<span class="done">›</span> ') + text;
+          li++;
+          setTimeout(typeLine, 140);
+        }
+      }, speed);
+    }
+    typeLine();
+  }
+
+  // ---- Tiếng "stinger" ngắn, kiểu giật mình trong phim kinh dị ----
+  function playStinger(){
+    try{
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const now = ctx.currentTime;
+      const thump = ctx.createOscillator();
+      const thumpGain = ctx.createGain();
+      thump.type = 'sine';
+      thump.frequency.setValueAtTime(160, now);
+      thump.frequency.exponentialRampToValueAtTime(32, now + 0.35);
+      thumpGain.gain.setValueAtTime(0.4, now);
+      thumpGain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+      thump.connect(thumpGain).connect(ctx.destination);
+      thump.start(now); thump.stop(now + 0.4);
+
+      const screech = ctx.createOscillator();
+      const screechGain = ctx.createGain();
+      screech.type = 'sawtooth';
+      screech.frequency.setValueAtTime(2400, now);
+      screech.frequency.exponentialRampToValueAtTime(350, now + 0.28);
+      screechGain.gain.setValueAtTime(0.05, now);
+      screechGain.gain.exponentialRampToValueAtTime(0.001, now + 0.28);
+      screech.connect(screechGain).connect(ctx.destination);
+      screech.start(now); screech.stop(now + 0.28);
+    }catch(e){ /* nếu bị chặn, bỏ qua âm thanh */ }
+  }
+
+  // ---- Chuyển cảnh kiểu "found-footage": nhiễu ám màu (băng hỏng) + cắt đen đột ngột + zoom giật ----
+  function playTransitionNoise(durationMs, onComplete){
+    const overlay = document.getElementById('transitionOverlay');
+    const canvas = document.getElementById('transitionCanvas');
+    const ctx = canvas.getContext('2d');
+    overlay.classList.add('on');
+    overlay.classList.add('punch');
+    playStinger();
+    const start = performance.now();
+
+    // Các mốc thời gian (tỉ lệ theo durationMs) sẽ là khung hình đen — tạo cảm giác "giật khung"
+    const blackCutsAt = [0.08, 0.09, 0.42, 0.44, 0.82];
+
+    function drawFrame(){
+      const elapsed = performance.now() - start;
+      const progress = elapsed / durationMs;
+      const isBlackCut = blackCutsAt.some(p => Math.abs(progress - p) < 0.015);
+      const w = canvas.width, h = canvas.height;
+
+      ctx.fillStyle = '#0b0705';
+      ctx.fillRect(0,0,w,h);
+
+      if(!isBlackCut){
+        // các dải màu neon lệch ngang, kiểu RGB-split / screen tear
+        const bandColors = ['rgba(255,45,85,.55)','rgba(45,255,220,.5)','rgba(255,45,220,.5)','rgba(120,255,90,.4)','rgba(80,140,255,.45)'];
+        const bandCount = 6 + Math.floor(Math.random()*8);
+        for(let b=0; b<bandCount; b++){
+          const bandH = 2 + Math.random()*10;
+          const y = Math.random()*h;
+          const xOffset = (Math.random()-0.5)*30;
+          ctx.fillStyle = bandColors[Math.floor(Math.random()*bandColors.length)];
+          ctx.fillRect(xOffset, y, w, bandH);
+        }
+        // mảnh vỡ pixel nhỏ, nhiều màu, rải rác
+        for(let n=0; n<40; n++){
+          const px = Math.random()*w, py = Math.random()*h;
+          const size = 2 + Math.random()*6;
+          ctx.fillStyle = `rgba(${Math.random()*255},${Math.random()*255},${Math.random()*255},.7)`;
+          ctx.fillRect(px, py, size, size);
+        }
+        // rung dịch ngang toàn khung cho cảm giác "giật hình"
+        canvas.style.transform = `translateX(${(Math.random()-0.5)*10}px)`;
+      }else{
+        canvas.style.transform = 'translateX(0)';
+      }
+
+      if(elapsed < durationMs){
+        requestAnimationFrame(drawFrame);
+      }else{
+        canvas.style.transform = 'translateX(0)';
+        overlay.classList.remove('on','punch');
+        onComplete();
+      }
+    }
+    requestAnimationFrame(drawFrame);
+  }
+
+  function openGift(){
+    // Pha 1: khựng lại một nhịp — không có gì xảy ra, như bị đơ
+    setTimeout(startLocalGlitch, 500);
+  }
+
+  // Pha 2: vài mảnh glitch nhỏ xuất hiện rải rác, trang mồi vẫn hiển thị phía sau
+  function startLocalGlitch(){
+    const container = document.getElementById('glitchPatches');
+    container.classList.add('on');
+    const patchColors = ['#ff2d55','#2dffdc','#ff2ddc','#78ff5a','#508cff'];
+    const spawner = setInterval(() => {
+      const patch = document.createElement('div');
+      patch.className = 'glitch-patch';
+      const w = 30 + Math.random()*110;
+      const hgt = 4 + Math.random()*22;
+      patch.style.width = w + 'px';
+      patch.style.height = hgt + 'px';
+      patch.style.left = Math.random()*100 + '%';
+      patch.style.top = Math.random()*100 + '%';
+      patch.style.background = patchColors[Math.floor(Math.random()*patchColors.length)];
+      container.appendChild(patch);
+      setTimeout(() => patch.remove(), 180 + Math.random()*140);
+    }, 55);
+
+    setTimeout(() => {
+      clearInterval(spawner);
+      container.classList.remove('on');
+      container.innerHTML = '';
+      spreadFullGlitch();
+    }, 550);
+  }
+
+  // Pha 3: nhiễu lan ra phủ toàn màn hình rồi chuyển sang trang báo động
+  function spreadFullGlitch(){
+    const overlay = document.getElementById('transitionOverlay');
+    overlay.classList.add('spread-in');
+    playTransitionNoise(700, () => {
+      overlay.classList.remove('spread-in');
+      startPrank();
+    });
+  }
+
+  function startPrank(){
+    switchStage('stage-alert');
+    const stageEl = document.getElementById('stage-alert');
+    const staticEl = document.getElementById('staticOverlay');
+    const vignetteEl = document.getElementById('vignette');
+    stageEl.classList.add('shake-1');
+    playAlarm();
+    startMatrixRain();
+
+    const titleLines = ['ĐÃ PHÁT HIỆN MỐI ĐE DỌA', 'ĐANG PHÂN TÍCH...', 'KẾT NỐI KHÔNG XÁC ĐỊNH', 'MẤT ỔN ĐỊNH...', 'Đang xóa dữ liệu...', 'ĐÙA THÔI 😄'];
+    let ti = 0;
+    const textEl = document.getElementById('alertText');
+    const titleFlicker = setInterval(() => {
+      ti++;
+      if(ti < titleLines.length - 1){ textEl.textContent = titleLines[ti]; }
+    }, 1000);
+
+    const logLines = [
+      'Đang quét hệ thống...',
+      'Tìm thấy 3 tiến trình lạ',
+      'Đang dò cổng mạng 21, 80, 443...',
+      'Thiết lập kết nối ẩn danh...',
+      '[LỖI] Mất gói tin — đang thử lại...',
+      'Giải mã dữ liệu gói tin...',
+      'Đang xác minh nguồn gốc truy cập...',
+      '[LỖI] Tường lửa nội bộ phản hồi bất thường',
+      'Đồng bộ nhật ký hệ thống...',
+      'Đang tổng hợp kết quả...'
+    ];
+    const termBox = document.getElementById('terminalBox');
+    typeTerminal(logLines, termBox);
+
+    const totalDuration = 9600; // ms, khớp với thời lượng âm thanh
+
+    // Pha 2: rung mạnh hơn + bật nhiễu sóng, ở khoảng 1/3 thời gian
+    const phase2 = setTimeout(() => {
+      stageEl.classList.remove('shake-1');
+      stageEl.classList.add('shake-2');
+      staticEl.classList.add('on');
+    }, totalDuration * 0.35);
+
+    // Pha 3: rung dữ dội nhất + viền đỏ nhấp nháy, ở khoảng 2/3 thời gian
+    const phase3 = setTimeout(() => {
+      stageEl.classList.remove('shake-2');
+      stageEl.classList.add('shake-3');
+      vignetteEl.classList.add('pulse');
+    }, totalDuration * 0.68);
+
+    // Thanh tiến trình chạy suốt thời lượng, tăng tốc nhẹ về cuối
+    const bar = document.getElementById('progressBar');
+    let pct = 0;
+    const barTimer = setInterval(() => {
+      pct += 100/(totalDuration/120);
+      bar.style.width = Math.min(pct,100) + '%';
+    }, 120);
+
+    setTimeout(() => {
+      clearInterval(titleFlicker);
+      clearInterval(barTimer);
+      clearTimeout(phase2);
+      clearTimeout(phase3);
+      stopMatrixRain();
+      stageEl.classList.remove('shake-1','shake-2','shake-3');
+      staticEl.classList.remove('on');
+      vignetteEl.classList.remove('pulse');
+      switchStage('stage-reveal');
+    }, totalDuration);
+  }
+
+  function showThanks(){
+    document.getElementById('thanksMsg').classList.add('show');
+  }
+</script>
+</body>
+</html>
